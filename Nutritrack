@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriTrack</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --bg: #f0f9ff;
+      --card-bg: #ffffff;
+      --text: #334155;
+      --text-light: #94a3b8;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; }
+    .app-container { width: 100%; max-width: 480px; background: var(--bg); position: relative; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    /* Login Screen */
+    #login-screen { padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; background: var(--card-bg); }
+    .input-group { width: 100%; margin-bottom: 15px; }
+    .input-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--text-light); }
+    .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s; background: white;}
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1); }
+    
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; transition: 0.3s; }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-logout { background: none; border: 1px solid var(--border); color: var(--text-light); padding: 5px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; }
+    .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+
+    /* Header */
+    header { background: var(--card-bg); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .header-info h1 { font-size: 18px; color: var(--primary); font-weight: 800; }
+    .header-info p { font-size: 12px; color: var(--text-light); }
+    
+    /* Cards & Components */
+    .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 40px; }
+    .card { background: var(--card-bg); margin: 15px; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .card-title { font-size: 14px; font-weight: 700; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .progress-bar { width: 100%; height: 18px; background: #e0f2fe; border-radius: 10px; overflow: hidden; cursor: pointer; }
+    .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+    
+    .tab-group { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+    .tab-btn { padding: 8px 16px; border: 1px solid var(--border); background: white; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--text-light); font-weight: 500; }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    
+    .menu-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .menu-pill { padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 12px; cursor: pointer; background: white; transition: 0.2s; min-width: 80px; }
+    .menu-pill.selected { border-color: var(--primary); background: #e0f2fe; color: var(--primary); font-weight: 700; }
+    .n-badge { font-size: 9px; padding: 2px 5px; background: #f1f5f9; border-radius: 4px; display: inline-block; margin-top: 4px; }
+
+    /* List Item styles for Admin & History */
+    .log-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.5;}
+    .log-item:last-child { border-bottom: none; }
+    .log-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 4px; }
+
+    /* Popups */
+    .popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+    .popup-content { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    
+    .hidden { display: none !important; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  
+  <div id="login-screen">
+    <h1 style="color: var(--primary); font-size: 32px; font-weight: 800; margin-bottom: 5px;">NutriTrack</h1>
+    <p style="color: var(--text-light); margin-bottom: 30px; font-size: 14px;">Program Kebiasaan Anak Hebat</p>
+    
+    <div class="tab-group" style="justify-content: center; margin-bottom: 25px;">
+      <button class="tab-btn active" onclick="toggleLogin('siswa')">Siswa</button>
+      <button class="tab-btn" onclick="toggleLogin('admin')">Admin</button>
+    </div>
+
+    <div id="login-siswa" style="width: 100%;">
+      <div class="input-group"><label>Nama Lengkap</label><input type="text" id="in-nama" placeholder="Contoh: Justin Naufal"></div>
+      <div class="input-group"><label>Kelas</label><input type="text" id="in-kelas" placeholder="Contoh: XI.7"></div>
+      <div class="input-group"><label>NISN</label><input type="number" id="in-nisn" placeholder="Masukkan NISN"></div>
+      <button class="btn" onclick="handleLoginSiswa()">Masuk</button>
+    </div>
+
+    <div id="login-admin" class="hidden" style="width: 100%;">
+      <div class="input-group"><label>Email Admin</label><input type="email" id="adm-email" placeholder="admin@email.com"></div>
+      <div class="input-group"><label>Password</label><input type="password" id="adm-pass" placeholder="••••••••"></div>
+      <button class="btn" onclick="handleLoginAdmin()">Masuk Admin</button>
+    </div>
+  </div>
+
+  <div id="main-app" class="hidden scroll-area">
+    <header>
+      <div class="header-info">
+        <h1>NutriTrack</h1>
+        <p id="txt-greeting">Halo!</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font-size: 12px; font-weight: 700;">🔥 <span id="streak-val">1</span> Hari</div>
+        <button class="btn-logout" onclick="logout()">Keluar</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="card-title" style="border:none; padding:0;"><span>💧 Target Air Putih</span> <span id="water-info" style="color:var(--primary)">0/8</span></div>
+      <div class="progress-bar" onclick="tambahAir()"><div class="progress-fill" id="water-fill"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🍴 Catat Menu Hari Ini</div>
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="pilihWaktu('Sarapan', this)">Sarapan</button>
+        <button class="tab-btn" onclick="pilihWaktu('Makan Siang', this)">Makan Siang</button>
+        <button class="tab-btn" onclick="pilihWaktu('Makan Malam', this)">Makan Malam</button>
+      </div>
+      <div class="tab-group" style="background:#f1f5f9; padding:4px; border-radius:30px;">
+        <button class="tab-btn active" onclick="pilihKategori('Makanan', this)">🍛 Makanan</button>
+        <button class="tab-btn" onclick="pilihKategori('Snack', this)">🥨 Snack</button>
+        <button class="tab-btn" onclick="pilihKategori('Minuman', this)">🥤 Minuman</button>
+      </div>
+      <div class="menu-grid" id="menu-box" style="margin-top:15px;"></div>
+      <button class="btn" id="btn-submit" onclick="kirimLaporan()">Kirim Laporan</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Riwayat Saya Hari Ini</div>
+      <div id="history-box">Belum ada catatan hari ini.</div>
+    </div>
+  </div>
+
+  <div id="admin-panel" class="hidden scroll-area">
+    <header>
+      <div class="header-info">
+        <h1>Panel Admin</h1>
+        <p>Dashboard Pengawasan NutriTrack</p>
+      </div>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
+    </header>
+
+    <div class="card">
+      <div class="card-title" style="color:var(--warning)">🔔 Kirim Pengingat</div>
+      <div class="input-group">
+        <label>Pilih Penerima</label>
+        <select id="sel-reminder">
+          <option value="all">Semua Siswa</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Pesan Reminder</label>
+        <input type="text" id="in-msg-reminder" placeholder="Contoh: Jangan lupa minum air putih ya!">
+      </div>
+      <button class="btn" style="background:var(--warning); color:#fff;" onclick="kirimReminderAdmin()">Kirim Reminder</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">➕ Tambah Menu Baru</div>
+      <div class="input-group"><label>Nama Menu</label><input type="text" id="add-nama" placeholder="Contoh: Jus Alpukat"></div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label>Kategori</label>
+          <select id="add-kat">
+            <option value="Makanan">Makanan</option><option value="Snack">Snack</option><option value="Minuman">Minuman</option>
+          </select>
+        </div>
+        <div class="input-group"><label>Kalori (kkal)</label><input type="number" id="add-kal" value="0"></div>
+        <div class="input-group"><label>Protein (g)</label><input type="number" id="add-pro" value="0"></div>
+        <div class="input-group"><label>Gula (g)</label><input type="number" id="add-gul" value="0"></div>
+        <div class="input-group"><label>Lemak (g)</label><input type="number" id="add-lem" value="0"></div>
+      </div>
+      <button class="btn" onclick="tambahMenuBaru()">Simpan Menu</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Data Laporan Siswa</div>
+      <div id="admin-log-box" style="font-size:13px; color:var(--text-light)">Belum ada data masuk.</div>
+    </div>
+  </div>
+
+  <div class="popup-overlay" id="popup">
+    <div class="popup-content">
+      <h3 id="pop-head" style="color:var(--primary); margin-bottom:10px;">Informasi</h3>
+      <div id="pop-text" style="text-align:left; font-size:13px; background:#f8fafc; padding:15px; border-radius:12px; margin-bottom:20px; line-height:1.6;"></div>
+      <button class="btn" onclick="tutupPopup()">Mengerti</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SCRIPT_URL = "URL_APPS_SCRIPT_ANDA"; // Masukkan URL Google Apps Script Anda
+
+  // === DATABASE & STATE LOKAL (LOCALSTORAGE) ===
+  const defaultDB = [
+    { nama: 'Nasi Kuning', kat: 'Makanan', kal: 400, pro: 10, gul: 2, lem: 12 },
+    { nama: 'Ayam Goreng', kat: 'Makanan', kal: 260, pro: 20, gul: 1, lem: 15 },
+    { nama: 'Mie Instan', kat: 'Makanan', kal: 380, pro: 8, gul: 5, lem: 14 },
+    { nama: 'Roti Bakar', kat: 'Snack', kal: 200, pro: 4, gul: 12, lem: 6 },
+    { nama: 'Biskuit', kat: 'Snack', kal: 150, pro: 2, gul: 10, lem: 5 },
+    { nama: 'Es Teh Manis', kat: 'Minuman', kal: 120, pro: 0, gul: 25, lem: 0 },
+    { nama: 'Susu UHT', kat: 'Minuman', kal: 150, pro: 7, gul: 14, lem: 4 },
+    { nama: 'Air Putih', kat: 'Minuman', kal: 0, pro: 0, gul: 0, lem: 0 }
+  ];
+
+  // Load data dari LocalStorage, jika kosong gunakan default
+  let database = JSON.parse(localStorage.getItem('nt_db')) || defaultDB;
+  let allLogs = JSON.parse(localStorage.getItem('nt_logs')) || [];
+  let registeredUsers = JSON.parse(localStorage.getItem('nt_users')) || [];
+
+  // Variabel Sesi (Sementara selama buka web)
+  let user = { nama: '', kelas: '', nisn: '' };
+  let selected = [];
+  let water = 0;
+  let waktuMakan = 'Sarapan';
+  let kategori = 'Makanan';
+  let reminderInterval; // Untuk menyimpan timer pengecekan reminder
+
+  // === FUNGSI LOGIN & AUTENTIKASI ===
+  function toggleLogin(type) {
+    document.querySelectorAll('#login-screen .tab-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('login-siswa').classList.toggle('hidden', type !== 'siswa');
+    document.getElementById('login-admin').classList.toggle('hidden', type !== 'admin');
+  }
+
+  function handleLoginSiswa() {
+    const n = document.getElementById('in-nama').value.trim();
+    const k = document.getElementById('in-kelas').value.trim();
+    const nisn = document.getElementById('in-nisn').value.trim();
+    
+    if(!n || !k || !nisn) return alert("Mohon lengkapi Nama, Kelas, dan NISN!");
+    
+    user = { nama: n, kelas: k, nisn: nisn };
+    
+    // Simpan data siswa ke daftar user jika belum ada (Untuk keperluan Admin mengirim reminder)
+    if(!registeredUsers.find(u => u.nama === n)) {
+      registeredUsers.push(user);
+      localStorage.setItem('nt_users', JSON.stringify(registeredUsers));
+    }
+
+    // Manajemen Daily Streak
+    let lastLogin = localStorage.getItem(`nt_last_login_${n}`);
+    let streak = parseInt(localStorage.getItem(`nt_streak_${n}`)) || 1;
+    let today = new Date().toDateString();
+    
+    if (lastLogin && lastLogin !== today) {
+       streak++; // Hari berganti, tambah streak
+    }
+    localStorage.setItem(`nt_last_login_${n}`, today);
+    localStorage.setItem(`nt_streak_${n}`, streak);
+    
+    document.getElementById('txt-greeting').innerText = `Halo, ${n}! (${k})`;
+    document.getElementById('streak-val').innerText = streak;
+    
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+    
+    renderMenuSiswa();
+    renderRiwayatSiswa();
+    jalankanPengecekanReminder(); // Mulai cek notifikasi
+  }
+
+  function handleLoginAdmin() {
+    const e = document.getElementById('adm-email').value;
+    const p = document.getElementById('adm-pass').value;
+    if(e === 'admin@email.com' && p === 'admin123') {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('admin-panel').classList.remove('hidden');
+      renderAdminPanel();
+    } else { 
+      alert("Email atau Password Admin salah!"); 
+    }
+  }
+
+  // === FUNGSI SISWA ===
+  function renderMenuSiswa() {
+    const box = document.getElementById('menu-box');
+    box.innerHTML = '';
+    const filteredDB = database.filter(m => m.kat === kategori);
+    
+    if(filteredDB.length === 0) {
+      box.innerHTML = `<span style="font-size:12px; color:#888;">Belum ada menu di kategori ini.</span>`;
+      return;
+    }
+
+    filteredDB.forEach(item => {
+      const isSel = selected.find(s => s.nama === item.nama);
+      const div = document.createElement('div');
+      div.className = `menu-pill ${isSel ? 'selected' : ''}`;
+      div.innerHTML = `${item.nama}<br><span class="n-badge">${item.kal} kkal</span>`;
+      div.onclick = () => {
+        if(!isSel) {
+          selected.push(item);
+          bukaPopup(`Gizi ${item.nama}`, `💪 Protein: ${item.pro}g<br>🍭 Gula: ${item.gul}g<br>🥑 Lemak: ${item.lem}g<br><br><i>Saran: Perhatikan asupan gizi harianmu!</i>`);
+        } else {
+          selected = selected.filter(s => s.nama !== item.nama);
+        }
+        renderMenuSiswa();
+      };
+      box.appendChild(div);
+    });
+  }
+
+  function tambahAir() {
+    if(water < 8) {
+      water++;
+      document.getElementById('water-fill').style.width = (water/8*100)+'%';
+      document.getElementById('water-info').innerText = `${water}/8`;
+      
+      if(water === 8) {
+        setTimeout(() => bukaPopup("🎉 Luar Biasa!", "Hebat! Kamu sudah minum 8 gelas hari ini! Terus pertahankan kebiasaan sehat ini ya!"), 300);
+      }
+    }
+  }
+
+  function pilihWaktu(w, btnElement) {
+    waktuMakan = w;
+    btnElement.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    btnElement.classList.add('active');
+  }
+
+  function pilihKategori(k, btnElement) {
+    kategori = k;
+    btnElement.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    btnElement.classList.add('active');
+    renderMenuSiswa();
+  }
+
+  function kirimLaporan() {
+    if(selected.length === 0) return alert("Pilih minimal 1 menu makanan/minuman!");
+    const btn = document.getElementById('btn-submit');
+    btn.innerText = "Mengirim...";
+    
+    const menuList = selected.map(s => s.nama).join(", ");
+    const totalGula = selected.reduce((a, b) => a + b.gul, 0);
+    const totalKalori = selected.reduce((a, b) => a + Number(b.kal), 0);
+
+    const logData = { 
+      waktuSubmit: new Date().toLocaleTimeString('id-ID'),
+      nama: user.nama, 
+      kelas: user.kelas, 
+      waktu: waktuMakan, 
+      menu: menuList, 
+      gula: totalGula,
+      kalori: totalKalori,
+      air: water 
+    };
+
+    // 1. Simpan ke LocalStorage (Untuk dilihat Admin)
+    allLogs.unshift(logData); // Tambah ke urutan pertama
+    localStorage.setItem('nt_logs', JSON.stringify(allLogs));
+    
+    // 2. Kirim ke Google Sheets (Jika URL valid)
+    if(SCRIPT_URL !== "URL_APPS_SCRIPT_ANDA") {
+      fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(logData) });
+    }
+
+    // 3. Efek UI Sukses
+    setTimeout(() => {
+      btn.innerText = "✅ Terkirim!";
+      btn.style.background = "var(--success)";
+      renderRiwayatSiswa(); // Perbarui tampilan riwayat di layar siswa
+      
+      setTimeout(() => {
+        btn.innerText = "Kirim Laporan";
+        btn.style.background = "var(--primary)";
+        selected = []; // Reset pilihan setelah dikirim
+        renderMenuSiswa();
+      }, 2000);
+    }, 800);
+  }
+
+  function renderRiwayatSiswa() {
+    const historyBox = document.getElementById('history-box');
+    // Filter log hanya milik siswa yang sedang login
+    const myLogs = allLogs.filter(log => log.nama === user.nama);
+    
+    if(myLogs.length === 0) {
+      historyBox.innerHTML = '<div style="font-size:12px; color:#888;">Belum ada catatan hari ini.</div>';
+      return;
+    }
+
+    historyBox.innerHTML = '';
+    myLogs.forEach(log => {
+      historyBox.innerHTML += `
+        <div class="log-item">
+          <div class="log-header">
+            <span style="color:var(--primary)">${log.waktu}</span>
+            <span style="font-size:11px; font-weight:normal; color:#888">${log.waktuSubmit}</span>
+          </div>
+          🍽️ ${log.menu} <br>
+          <span style="font-size:11px; color:#666;">🔥 ${log.kalori} kkal | 🍭 Gula: ${log.gula}g | 💧 Air: ${log.air} gelas</span>
+        </div>
+      `;
+    });
+  }
+
+  // === FUNGSI ADMIN ===
+  function renderAdminPanel() {
+    // 1. Render Dropdown Nama Siswa untuk Reminder
+    const selectRem = document.getElementById('sel-reminder');
+    selectRem.innerHTML = '<option value="all">Semua Siswa</option>';
+    registeredUsers.forEach(u => {
+      selectRem.innerHTML += `<option value="${u.nama}">${u.nama} (${u.kelas})</option>`;
+    });
+
+    // 2. Render Riwayat Semua Siswa
+    const adminLogBox = document.getElementById('admin-log-box');
+    if(allLogs.length === 0) {
+      adminLogBox.innerHTML = 'Belum ada data masuk.';
+    } else {
+      adminLogBox.innerHTML = '';
+      allLogs.forEach(log => {
+        adminLogBox.innerHTML += `
+          <div class="log-item" style="background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:8px;">
+            <div class="log-header">
+              <span style="color:var(--primary)">🧑‍🎓 ${log.nama} (${log.kelas})</span>
+              <span style="font-size:11px; font-weight:normal;">${log.waktuSubmit}</span>
+            </div>
+            <b>${log.waktu}</b>: ${log.menu} <br>
+            <span style="font-size:11px; color:#666;">🔥 Kalori: ${log.kalori} | 💧 Air: ${log.air}/8</span>
+          </div>
+        `;
+      });
+    }
+  }
+
+  function tambahMenuBaru() {
+    const nama = document.getElementById('add-nama').value;
+    const kat = document.getElementById('add-kat').value;
+    const kal = document.getElementById('add-kal').value;
+    const pro = document.getElementById('add-pro').value;
+    const gul = document.getElementById('add-gul').value;
+    const lem = document.getElementById('add-lem').value;
+
+    if(!nama) return alert("Nama menu tidak boleh kosong!");
+
+    const newItem = {
+      nama: nama, kat: kat, 
+      kal: parseInt(kal)||0, pro: parseInt(pro)||0, 
+      gul: parseInt(gul)||0, lem: parseInt(lem)||0
+    };
+
+    database.push(newItem);
+    localStorage.setItem('nt_db', JSON.stringify(database)); // Simpan ke storage
+
+    alert(`✅ Menu "${nama}" berhasil ditambahkan ke kategori ${kat}!`);
+    
+    // Kosongkan form input
+    document.getElementById('add-nama').value = '';
+    document.getElementById('add-kal').value = '0';
+    document.getElementById('add-pro').value = '0';
+    document.getElementById('add-gul').value = '0';
+    document.getElementById('add-lem').value = '0';
+  }
+
+  function kirimReminderAdmin() {
+    const target = document.getElementById('sel-reminder').value;
+    const msg = document.getElementById('in-msg-reminder').value || "Jangan lupa minum air putih dan perhatikan asupan gizimu hari ini!";
+    
+    // Simpan pesan di LocalStorage
+    localStorage.setItem('nt_reminder_target', target);
+    localStorage.setItem('nt_reminder_msg', msg);
+    localStorage.setItem('nt_reminder_time', Date.now()); // penanda waktu reminder baru
+
+    alert(`✅ Reminder berhasil dikirim ke: ${target === 'all' ? 'Semua Siswa' : target}`);
+    document.getElementById('in-msg-reminder').value = '';
+  }
+
+  // === SISTEM REMINDER (Pengecekan di Latar Belakang) ===
+  function jalankanPengecekanReminder() {
+    // Fungsi untuk memeriksa apakah ada reminder baru untuk siswa ini
+    function cekNotifikasi() {
+      const target = localStorage.getItem('nt_reminder_target');
+      const msg = localStorage.getItem('nt_reminder_msg');
+      const time = localStorage.getItem('nt_reminder_time');
+      
+      // Kunci untuk menghindari popup muncul berulang-ulang untuk pesan yang sama
+      const lastSeenTime = localStorage.getItem(`nt_seen_reminder_${user.nama}`);
+
+      if(target && msg && time !== lastSeenTime) {
+        if(target === 'all' || target === user.nama) {
+          bukaPopup("🔔 Pesan dari Admin", msg);
+          // Tandai bahwa siswa ini sudah melihat pesan di waktu tersebut
+          localStorage.setItem(`nt_seen_reminder_${user.nama}`, time);
+        }
+      }
+    }
+
+    cekNotifikasi(); // Cek langsung saat pertama kali login
+    // Cek secara berkala setiap 5 detik (Sebagai simulasi. Dalam kenyataan, user tidak akan menatap layar berjam-jam, namun ini memenuhi syarat "otomatis" di latar belakang)
+    reminderInterval = setInterval(cekNotifikasi, 5000); 
+
+    // Fitur: Pop-up Otomatis setiap 2 Jam (7200000 ms) khusus untuk pengingat Minum Air
+    setInterval(() => {
+       if(!document.getElementById('login-screen').classList.contains('hidden')) return; // Jangan popup kalau di layar login
+       bukaPopup("💧 Waktunya Minum!", "Hai, sudah 2 jam berlalu. Yuk minum air putih setidaknya 1 gelas agar tubuhmu tetap terhidrasi!");
+    }, 7200000);
+  }
+
+  // === UTILITAS ===
+  function bukaPopup(h, t) {
+    document.getElementById('pop-head').innerHTML = h;
+    document.getElementById('pop-text').innerHTML = t;
+    document.getElementById('popup').style.display = 'flex';
+  }
+  function tutupPopup() { document.getElementById('popup').style.display = 'none'; }
+
+  function logout() {
+    // 1. Matikan pengecekan interval notifikasi
+    clearInterval(reminderInterval);
+
+    // 2. Kosongkan data *session* user saat ini
+    user = { nama: '', kelas: '', nisn: '' };
+    selected = [];
+    water = 0;
+    
+    // 3. Reset UI Siswa
+    document.getElementById('water-fill').style.width = '0%';
+    document.getElementById('water-info').innerText = '0/8';
+    
+    // 4. Kosongkan Input Login
+    document.querySelectorAll('input').forEach(input => input.value = '');
+    
+    // 5. Kembali ke Layar Login
+    document.getElementById('main-app').classList.add('hidden');
+    document.getElementById('admin-panel').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    toggleLogin('siswa');
+  }
+</script>
+</body>
+</html>
